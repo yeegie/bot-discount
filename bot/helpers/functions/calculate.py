@@ -1,7 +1,7 @@
 from typing import Union
 
 
-def calculate_number(number: Union[int, float]):
+def calculate_number(number: Union[int, float]) -> str:
     """
     ### calculate_number
     params:
@@ -9,7 +9,7 @@ def calculate_number(number: Union[int, float]):
     """
     result = []
 
-    for i in range(5, 100, 5) -> str:
+    for i in range(5, 100, 5):
         value = number - (number * (i / 100))
         is_last = True if i == 95 else False
 
