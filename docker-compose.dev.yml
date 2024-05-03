@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: ./bot/Dockerfile.dev
+    ports:
+      - 8000:8000
+    env_file:
+      - .env
