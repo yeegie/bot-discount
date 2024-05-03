@@ -1,7 +1,15 @@
-def calculate_number(number):
+from typing import Union
+
+
+def calculate_number(number: Union[int, float]):
+    """
+    ### calculate_number
+    params:
+    * number - required to decompose into percentages.
+    """
     result = []
 
-    for i in range(5, 100, 5):
+    for i in range(5, 100, 5) -> str:
         value = number - (number * (i / 100))
         is_last = True if i == 95 else False
 
@@ -9,7 +17,4 @@ def calculate_number(number):
 
     result = '\n'.join(result)
 
-    return f'''
-{number} 💰
-{result}
-'''
+    return f'{number} 💰\n{result}'
