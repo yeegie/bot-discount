@@ -1,11 +1,47 @@
 version: '3.7'
 
 services:
+  # http://localhost:8080/dashboard/
+  traefik:
+    container_name: traefik
+    image: traefik:v3.0
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web-secure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    networks:
+      - web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.enable=true"
+
   bot:
+    container_name: bot
     build:
       context: .
       dockerfile: ./bot/Dockerfile.dev
     ports:
-      - 8000:8000
+      - "${host_port}:${listen_port}"
+    networks:
+      - web
     env_file:
       - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.${name}-https.entrypoints=web-secure"
+      - "traefik.http.routers.${name}-https.rule=Host(`${domain}`) && PathPrefix(`${bot_path}`)"
+      - "traefik.http.routers.${name}-https.service=${name}"
+      - "traefik.http.routers.${name}-https.tls=true"
+      - "traefik.http.services.${name}.loadbalancer.server.port=80"
+
+networks:
+  web:
+    driver: bridge
+    external: true
