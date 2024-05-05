@@ -28,7 +28,8 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
     logger.info('[X] Routers included...')
 
     await bot.set_webhook(f"{WebHook.base_url}{WebHook.bot_path}")
-    logger.info(f'[🌟] Bot started -- {(time.time() - time_start):.1f} sec.')
+    logger.info(f'[🤖] Bot started @{(await bot.get_me()).username} -- {(time.time() - time_start):.1f} sec.')
+    # logger.info(f'[🌟] App runned on http://{WebHook.listen_address}:{WebHook.listen_port}/ @@ {WebHook.base_url}{WebHook.bot_path}')
 
 
 async def on_shutdown():
