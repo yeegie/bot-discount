@@ -1,4 +1,5 @@
-from data.config import Telegram, WebHook
+from data import config
+import asyncio
 
 from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
@@ -6,8 +7,11 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from aiogram.enums.parse_mode import ParseMode
 
-from aiohttp.web import Application, run_app, post
+from aiohttp.web import Application, run_app
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+
+from utils.executor import on_startup_notify, start_webhook, run_polling
+from utils.requests_middleware import log_middleware
 
 from handlers import routers
 
@@ -15,8 +19,11 @@ import time
 from loguru import logger
 
 
-LOG_OUT_FILE = 'logs/bot.log'
-logger.add(LOG_OUT_FILE, rotation='10 MB', compression='zip', level='DEBUG')
+logger.level('REQUEST', no=35, color="<blue>")
+
+
+logger.add(config.LOG_REQUESTS_FILE, rotation='10 MB', compression='zip', level='REQUEST', format="{time} - {level} - {message}")
+logger.add(config.LOG_OUT_FILE, rotation='10 MB', compression='zip', level='DEBUG')
 
 
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
@@ -27,9 +34,18 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
     dispatcher.include_router(router=routers.admin_router)
     logger.info('[X] Routers included...')
 
-    await bot.set_webhook(f"{WebHook.base_url}{WebHook.bot_path}")
+    if not config.General.polling:
+        await start_webhook(
+            config.WebHook.complete_url,
+            bot,
+            config.WebHook.listen_address,
+            config.WebHook.listen_port,
+        )
+        
     logger.info(f'[🤖] Bot started @{(await bot.get_me()).username} -- {(time.time() - time_start):.1f} sec.')
-    # logger.info(f'[🌟] App runned on http://{WebHook.listen_address}:{WebHook.listen_port}/ @@ {WebHook.base_url}{WebHook.bot_path}')
+
+    if config.Telegram.on_startup_notify:
+        await on_startup_notify(bot)
 
 
 async def on_shutdown():
@@ -42,20 +58,27 @@ if __name__ == '__main__':
     props = DefaultBotProperties(
         parse_mode=ParseMode.HTML,
     )
-
-    bot = Bot(token=Telegram.token, default=props)
+    bot = Bot(token=config.Telegram.token, default=props)
 
     storage = MemoryStorage()
     dispather = Dispatcher(storage=storage)
     dispather.startup.register(on_startup)
     dispather.shutdown.register(on_shutdown)
 
-    app = Application()
+    if config.General.polling:
+        asyncio.run(run_polling(bot, dispather))
+    else:
+        app = Application()
 
-    app['bot'] = bot
-    app['dp'] = dispather
+        app.middlewares.append(log_middleware)
+        app['bot'] = bot
+        app['dp'] = dispather
 
-    SimpleRequestHandler(dispatcher=dispather, bot=bot).register(app, WebHook.bot_path)
+        SimpleRequestHandler(
+            dispatcher=dispather,
+            bot=bot
+        ).register(app, config.WebHook.bot_path)
 
-    setup_application(app, dispather, bot=bot)
-    run_app(app, host=WebHook.listen_address, port=WebHook.listen_port)
+        setup_application(app, dispather, bot=bot)
+
+        run_app(app, host=config.WebHook.listen_address, port=config.WebHook.listen_port)
