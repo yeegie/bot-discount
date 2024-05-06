@@ -1,0 +1,20 @@
+# Project
+./README.md
+./LICENSE.txt
+./*ignore
+./idea/
+./github/
+./flake8
+./.git
+
+# Cache
+*.py[cod]
+__pycache__
+
+# Docker
+docker-compose*.yml
+Dockerfile
+
+# Environment
+# .env*
+./.env_example

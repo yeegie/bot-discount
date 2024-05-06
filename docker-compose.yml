@@ -1,0 +1,56 @@
+version: '3.7'
+
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:v3.0
+    command:
+      - "--log.level=ERROR"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+    # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web-secure.address=:443"
+    # Redirects
+      # - "--entrypoints.web-secure.http.redirections.entryPoint.to=web"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+      - "8443:8443"
+    networks:
+      - default
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # - ./traefik.yml:/traefik.yml:ro
+
+  bot:
+    container_name: bot
+    build:
+      context: .
+      dockerfile: ./bot/Dockerfile.dev
+    networks:
+      - default
+      - web
+    env_file:
+      - .env
+    depends_on:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.bot-router.entrypoints=web-secure"
+      - "traefik.http.routers.bot-router.rule=Host(`${domain}`) && PathPrefix(`${bot_path}`)"
+      - "traefik.http.routers.bot-router.tls=true"
+      - "traefik.http.services.bot-discount.loadbalancer.server.url=bot.localhost"
+      - "traefik.http.services.bot-discount.loadbalancer.server.port=${listen_port}"
+      - "traefik.http.routers.bot-router.service=bot-discount"
+
+networks:
+  default:
+    driver: overlay
+    attachable: true
+  web:
+    driver: overlay
+    external: true
