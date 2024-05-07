@@ -1,55 +1,57 @@
 version: '3.7'
 
 services:
-  traefik:
-    container_name: traefik
-    image: traefik:v3.0
-    command:
-      - "--log.level=ERROR"
-      - "--api.insecure=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-    # Entrypoints
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.web-secure.address=:443"
-    # Redirects
-      # - "--entrypoints.web-secure.http.redirections.entryPoint.to=web"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8080:8080"
-    networks:
-      - default
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      # - ./traefik.yml:/traefik.yml:ro
-
   bot:
-    container_name: bot
+    container_name: ${project}
+    restart: always
     build:
       context: .
       dockerfile: ./bot/Dockerfile.dev
     networks:
-      - default
-      - web
+      - traefik_network
     env_file:
       - .env
-    depends_on:
-      - traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=web"
-      - "traefik.http.routers.bot-router.entrypoints=web-secure"
-      - "traefik.http.routers.bot-router.rule=Host(`${domain}`) && PathPrefix(`${bot_path}`)"
-      - "traefik.http.routers.bot-router.tls=true"
-      - "traefik.http.services.bot-discount.loadbalancer.server.url=bot.localhost"
-      - "traefik.http.services.bot-discount.loadbalancer.server.port=${listen_port}"
-      - "traefik.http.routers.bot-router.service=bot-discount"
+      
+      # Network
+      - "traefik.docker.network=traefik_network"
+
+      # Service
+      - "traefik.http.services.${project}-service.loadbalancer.server.port=80"
+      - "traefik.http.services.${project}-service.loadbalancer.server.url=http://bot.localhost:${listen_port}/"
+
+      # Router
+      - "traefik.http.routers.${project}-router.rule=Host(`${domain}`) && PathPrefix(`${bot_path}`)"
+      - "traefik.http.routers.${project}-router.service=${project}-service"
+
+      # Entry point
+      - "traefik.http.routers.${project}-router.entrypoints=web-secure"
+
+      # TLS
+      - "traefik.http.routers.${project}-router.tls=true"
+
+  whoami:
+    image: "traefik/whoami"
+    container_name: "whoami"
+    networks:
+      - traefik_network
+    labels:
+      - "traefik.enable=true"
+      # Network
+      - "traefik.docker.network=traefik_network"
+
+      # Service
+      - "traefik.http.services.whoami-service.loadbalancer.server.port=80"
+      - "traefik.http.services.whoami-service.loadbalancer.server.url=http://whoami.localhost:80/"
+
+      # Router
+      - "traefik.http.routers.whoami-router.rule=Host(`1259-94-241-173-114.ngrok-free.app`) && PathPrefix(`/whoami`)"
+      - "traefik.http.routers.whoami-router.service=whoami-service"
+
+      - "traefik.http.routers.whoami-router.entrypoints=web-secure"
+      - "traefik.http.routers.whoami-router.tls=true"
 
 networks:
-  default:
-    driver: overlay
-    attachable: true
-  web:
-    driver: overlay
+  traefik_network:
     external: true
