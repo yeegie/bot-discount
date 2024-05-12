@@ -70,7 +70,10 @@ if __name__ == '__main__':
     else:
         app = Application()
 
-        app.middlewares.append(log_middleware)
+        # Requests logging
+        if config.General.requests_log:
+            app.middlewares.append(log_middleware)
+
         app['bot'] = bot
         app['dp'] = dispather
 

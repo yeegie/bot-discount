@@ -32,9 +32,10 @@ class General:
     * polling - startup type, accepts: true | false
     '''
     polling = env.bool('polling', default=False)
+    requests_log = env.bool('requests_log', default=False)
 
     _all = [polling]
-    _fields = ['polling']
+    _fields = ['polling', 'requests_log']
 
     @classmethod
     def __str__(cls) -> str:
