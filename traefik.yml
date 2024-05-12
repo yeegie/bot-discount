@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+  traefik:
+    container_name: traefik
+    restart: always
+    image: traefik:v3.0
+    command:
+      - "--log.level=DEBUG"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web-secure.address=:443"
+    ports:
+      - "80:80"
+    networks:
+      - traefik_network
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels:
+      - "traefik.enable=true"
+
+      # Network
+      - "traefik.docker.network=traefik_network"
+
+networks:
+  traefik_network:
+    driver: overlay
+    external: true

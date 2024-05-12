@@ -4,54 +4,33 @@ services:
   bot:
     container_name: ${project}
     restart: always
+    depends_on:
+      - traefik
     build:
       context: .
       dockerfile: ./bot/Dockerfile.dev
     networks:
       - traefik_network
+    ports:
+      - "${listen_port}:${listen_port}"
     env_file:
       - .env
     labels:
       - "traefik.enable=true"
-      
       # Network
       - "traefik.docker.network=traefik_network"
 
       # Service
-      - "traefik.http.services.${project}-service.loadbalancer.server.port=80"
-      - "traefik.http.services.${project}-service.loadbalancer.server.url=http://bot.localhost:${listen_port}/"
+      - "traefik.http.services.${project}-service.loadbalancer.server.port=${listen_port}"
 
       # Router
-      - "traefik.http.routers.${project}-router.rule=Host(`${domain}`) && PathPrefix(`${bot_path}`)"
+      - "traefik.http.routers.${project}-router.rule=Host(`${base_url}`) && PathPrefix(`${bot_path}`)"
       - "traefik.http.routers.${project}-router.service=${project}-service"
 
       # Entry point
-      - "traefik.http.routers.${project}-router.entrypoints=web-secure"
-
-      # TLS
-      - "traefik.http.routers.${project}-router.tls=true"
-
-  whoami:
-    image: "traefik/whoami"
-    container_name: "whoami"
-    networks:
-      - traefik_network
-    labels:
-      - "traefik.enable=true"
-      # Network
-      - "traefik.docker.network=traefik_network"
-
-      # Service
-      - "traefik.http.services.whoami-service.loadbalancer.server.port=80"
-      - "traefik.http.services.whoami-service.loadbalancer.server.url=http://whoami.localhost:80/"
-
-      # Router
-      - "traefik.http.routers.whoami-router.rule=Host(`1259-94-241-173-114.ngrok-free.app`) && PathPrefix(`/whoami`)"
-      - "traefik.http.routers.whoami-router.service=whoami-service"
-
-      - "traefik.http.routers.whoami-router.entrypoints=web-secure"
-      - "traefik.http.routers.whoami-router.tls=true"
+      - "traefik.http.routers.${project}-router.entrypoints=web"
 
 networks:
   traefik_network:
+    driver: overlay
     external: true
