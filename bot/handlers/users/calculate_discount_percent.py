@@ -19,6 +19,7 @@ from loguru import logger
 @user_router.message(Command(commands=['percent']))
 @user_router.message(F.text.lower().startswith('процент'))
 async def calculate_start(message: Message, state: FSMContext):
+    await state.clear()
     await state.set_state(states.CalculatePricePercent.percent)
     await message.answer('🪙')
     await message.answer('Введи процент, в следующем формате\n└ <code>15%</code> / <code>15</code>', reply_markup=cancel_inline('Я передумал 🙅🏻‍♂️'))
