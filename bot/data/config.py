@@ -53,7 +53,7 @@ class WebHook:
     '''
     listen_address = env.str('listen_address')
     listen_port = env.int('listen_port')
-    base_url = env.str('base_url')
+    base_url = 'https://' + env.str('base_url')
     bot_path = env.str('bot_path')
     complete_url = base_url + bot_path
 
