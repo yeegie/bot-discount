@@ -15,6 +15,7 @@ from loguru import logger
 @user_router.message(Command(commands=['number']))
 @user_router.message(F.text.lower().startswith('число'))
 async def calculate_start(message: Message, state: FSMContext):
+    await state.clear()
     await state.set_state(states.CalculatePriceNumber.value)
     await message.answer('💰')
     await message.answer('Введи цену, я рассчитаю скидки', reply_markup=cancel_inline('Я передумал 🙅🏻‍♂️'))
