@@ -14,7 +14,7 @@ class User(Model):
 
     register_time = fields.DatetimeField(auto_now_add=True)
 
-    fixed_percent = fields.FloatField(default=0)
+    fixed_percent = fields.FloatField(default=40)
 
     class Meta:
         table = 'users'
