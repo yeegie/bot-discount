@@ -30,3 +30,4 @@ async def get_percent(message: Message, state: FSMContext):
     user.fixed_percent = new_percent
     await user.save()
     await message.answer('Изменил 🤏🏻', reply_markup=settings(user.fixed_percent))
+    await state.clear()
