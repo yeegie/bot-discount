@@ -4,8 +4,6 @@ services:
   bot:
     container_name: ${project}
     restart: always
-    depends_on:
-      - traefik
     build:
       context: .
       dockerfile: ./bot/Dockerfile.dev
