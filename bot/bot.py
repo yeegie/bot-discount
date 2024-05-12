@@ -1,5 +1,6 @@
 from data import config
 import asyncio
+from database import init_database, close_database
 
 from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
@@ -13,22 +14,30 @@ from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_applicati
 from utils.executor import on_startup_notify, start_webhook, run_polling
 from utils.requests_middleware import log_middleware
 
+from middlewares.manage_users import ManageUserMiddleware
+
 from handlers import routers
 
 import time
 from loguru import logger
 
 
-logger.level('REQUEST', no=35, color="<blue>")
+# logger.level('REQUEST', no=35, color="<blue>")
 
 
-logger.add(config.LOG_REQUESTS_FILE, rotation='10 MB', compression='zip', level='REQUEST', format="{time} - {level} - {message}")
+# logger.add(config.LOG_REQUESTS_FILE, rotation='10 MB', compression='zip', level='REQUEST', format="{time} - {level} - {message}")
 logger.add(config.LOG_OUT_FILE, rotation='10 MB', compression='zip', level='DEBUG')
 
 
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
     logger.info(f'[⏳] Starting to launch the application...')
     time_start = time.time()
+
+    await init_database()
+
+    dispatcher.message.outer_middleware(ManageUserMiddleware())
+    dispatcher.callback_query.outer_middleware(ManageUserMiddleware())
+    logger.info('[X] Middlewares initialized')
 
     dispatcher.include_router(router=routers.user_router)
     dispatcher.include_router(router=routers.admin_router)
@@ -51,6 +60,7 @@ async def on_startup(dispatcher: Dispatcher, bot: Bot):
 async def on_shutdown():
     logger.info('Stopping the bot...')
     await bot.delete_webhook()
+    await close_database()
     logger.info('[💀] Bot - Bye!')
 
 
